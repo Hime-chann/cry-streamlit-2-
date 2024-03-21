@@ -50,6 +50,8 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 import pickle
 
+import sounddevice as sd
+
 from collections import Counter
 
 
