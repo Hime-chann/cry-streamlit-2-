@@ -1,7 +1,8 @@
-from sklearn import model_selection
 import streamlit as st
-import librosa
+import sounddevice as sd
 import numpy as np
+import scipy.io.wavfile as wav
+import librosa
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 import joblib
@@ -42,12 +43,19 @@ def app():
         if model is None:
             st.warning("Model loading failed. Classification functionality unavailable.")
 
-    uploaded_audio = st.file_uploader("Upload audio file (WAV format)", type=["wav"])
+    # Real-time audio recording function
+    def record_audio():
+        fs = 44100  # Sample rate
+        seconds = 5  # Duration of recording
 
-    if uploaded_audio is not None:
-        with open("uploaded_audio.wav", "wb") as f:
-            f.write(uploaded_audio.getbuffer())
+        st.write("Recording...")
+        myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1, dtype='int16')
+        sd.wait()  # Wait until recording is finished
 
+        st.write("Recording finished.")
+        return myrecording, fs
+
+    # Function to predict cry from audio file
     def predict_cry(audio_file):
         try:
             # Preprocess audio (extract MFCC features)
@@ -66,6 +74,18 @@ def app():
             st.error("Error occurred during prediction.")
             return None
 
+    # User interface
+    uploaded_audio = st.file_uploader("Upload audio file (WAV format)", type=["wav"])
+
+    if uploaded_audio is not None:
+        with open("uploaded_audio.wav", "wb") as f:
+            f.write(uploaded_audio.getbuffer())
+
+    if st.button("Record Audio"):
+        recording, fs = record_audio()
+        wav.write('recorded_audio.wav', fs, recording)
+        st.audio('recorded_audio.wav', format='audio/wav')
+
     if uploaded_audio is not None or st.button("Classify"):
         if uploaded_audio is None:
             st.error("Please upload an audio file.")
@@ -77,4 +97,4 @@ def app():
 # Run the app
 if __name__ == "__main__":
     app()
-    
+            
